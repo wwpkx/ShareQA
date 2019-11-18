@@ -1,0 +1,50 @@
+AndroidJUnitRunner: 一个可以用来运行JUnit 3和JUnit 4样式的测试类的Test Runner；
+Espresso: 提供了UI测试的API；谷歌13年的时候开源了espress
+	Espresso有三个重要的类
+	ViewMachers：寻找用来测试的View(匹配器)。
+	ViewActions：发送交互事件(界面行为)。
+	ViewAssertions：检验测试结果(界面判断)。
+UI Automator: 提供了跨APP UI测试的API
+	UI Automator是谷歌推出的，用于UI自动化测试的工具，也就是普通的手工测试，点击每个控件元素看看输出的结果是否符合预期
+
+blog and github
+https://blog.csdn.net/ethanco/article/details/52330481
+https://github.com/EthanCo/AndroidTesting
+
+官网
+https://developer.android.google.cn/training/testing/junit-rules
+
+Android单元测试—逻辑测试
+https://www.jianshu.com/p/474f276986ac
+https://www.imooc.com/article/48807
+
+Android测试系列之一 - 测试分类（节选）
+https://blog.csdn.net/u010661782/article/details/52484862
+https://www.jianshu.com/p/4179278d507a
+https://blog.csdn.net/u010661782/article/details/52489748
+
+Android自动化测试-从入门到入门
+https://segmentfault.com/a/1190000004338384
+
+Android 在开发中使用单元测试
+https://blog.csdn.net/u014099894/article/details/51276555
+
+Android单元测试-对Activity的测试
+https://blog.csdn.net/Double2hao/article/details/77160950
+
+自动化测试框架Espresso探索
+https://blog.csdn.net/wanghong940821/article/details/79439022
+https://blog.csdn.net/shandong_chu/article/details/47083753
+https://blog.csdn.net/qiang_xi/article/details/52933593
+https://blog.csdn.net/code_dream_wq/article/details/83029162
+https://blog.csdn.net/jgw2008/article/details/77575066
+
+sample
+https://github.com/search?o=desc&q=android单元测试&s=stars&type=Repositories
+https://github.com/ZoranLi/android_testing
+https://github.com/googlesamples/android-testing-templates
+https://github.com/hehonghui/app-test-arch
+https://github.com/simplezhli/AndroidUT
+https://github.com/leeowenowen/AndroidUnitTest
+https://github.com/wuhenzhizao/android-gitlab-ci-build
+
