@@ -1,0 +1,219 @@
+/**
+     * 全透状态栏
+     */
+    protected void setStatusBarFullTransparent() {
+        if (Build.VERSION.SDK_INT >= 21) {//21表示5.0
+            Window window = getWindow();
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.TRANSPARENT);
+        } else if (Build.VERSION.SDK_INT >= 19) {//19表示4.4
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            //虚拟键盘也透明
+            //getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        }
+    }
+
+    /**
+     * 半透明状态栏
+     */
+    protected void setHalfTransparent() {
+
+        if (Build.VERSION.SDK_INT >= 21) {//21表示5.0
+            View decorView = getWindow().getDecorView();
+            int option = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            decorView.setSystemUiVisibility(option);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+
+        } else if (Build.VERSION.SDK_INT >= 19) {//19表示4.4
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            //虚拟键盘也透明
+            // getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+        }
+    }
+
+    /**
+     * 如果需要内容紧贴着StatusBar
+     * 应该在对应的xml布局文件中，设置根布局fitsSystemWindows=true。
+     */
+    private View contentViewGroup;
+
+    protected void setFitSystemWindow(boolean fitSystemWindow) {
+        if (contentViewGroup == null) {
+            contentViewGroup = ((ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+        }
+        contentViewGroup.setFitsSystemWindows(fitSystemWindow);
+    }
+
+    /**
+     * 为了兼容4.4的抽屉布局->透明状态栏
+     */
+    protected void setDrawerLayoutFitSystemWindow() {
+        if (Build.VERSION.SDK_INT == 19) {//19表示4.4
+            int statusBarHeight = getStatusHeight(this);
+            if (contentViewGroup == null) {
+                contentViewGroup = ((ViewGroup) findViewById(android.R.id.content)).getChildAt(0);
+            }
+            if (contentViewGroup instanceof DrawerLayout) {
+                DrawerLayout drawerLayout = (DrawerLayout) contentViewGroup;
+                drawerLayout.setClipToPadding(true);
+                drawerLayout.setFitsSystemWindows(false);
+                for (int i = 0; i < drawerLayout.getChildCount(); i++) {
+                    View child = drawerLayout.getChildAt(i);
+                    child.setFitsSystemWindows(false);
+                    child.setPadding(0,statusBarHeight, 0, 0);
+                }
+
+            }
+        }
+    }
+	
+public class TestActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_test);
+
+        setHalfTransparent();
+        setFitSystemWindow(false);
+    }
+
+    protected void setHalfTransparent()...
+    protected void setStatusBarFullTransparent()...
+    protected void setFitSystemWindow()...
+    protected void setDrawerLayoutFitSystemWindow()...
+}
+	
+	
+	
+	
+	
+------------------
+https://github.com/luckyshane/TintBar
+
+ public static void makeStatusBarTransparent(Activity activity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+            return;
+        }
+        Window window = activity.getWindow();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            int option = window.getDecorView().getSystemUiVisibility() | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            window.getDecorView().setSystemUiVisibility(option);
+            window.setStatusBarColor(Color.TRANSPARENT);
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        }
+    }
+	
+标题栏和状态栏重合问题
+解决状态栏和标题栏重叠的几种方法原理都是一致的：让布局中的标题栏有一个状态栏高度的marginTop或者paddingTop即可。但因为4.4之前是不存在状态栏重合这种问题，所以也就不需要有一个状态栏高度的marginTop或者paddingTop，所以要考虑一个兼容性问题。
+
+几种解决办法：
+
+使用系统提供的fitSystemWindows属性
+给标题控件动态增加paddingTop
+在DecorView中动态创建一个状态栏高度的View，然后更改View背景为想要的颜色，然后设置标题栏marginTop为状态栏高度
+在布局中定义一个假的用来充当状态栏的View，动态设置其高度或者可见性
+	
+	
+--------------------------
+设置状态栏颜色
+图1和图2的状态栏颜色不同。实现的思路如下：
+1、android 5.0及以上版本
+
+window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+window.setStatusBarColor(int);
+其中，5.0版本的FLAG_TRANSLUCENT_STATUS是全透明的，但是6.0上却是半透明的。若要实现图1的效果，则需要直接设置statusbar的颜色。
+2、android 4.4版本
+通过设置状态栏为透明，将应用布局延展到状态栏下面。然后在布局里构造一个同状态栏同尺寸的view，对view设置背景颜色即可。
+
+//设置透明状态栏
+window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+//取消透明状态栏
+window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+注意，4.4版本的透明效果如下图，顶部有一个黑色的半透明过渡。
+
+
+image.png
+实现代码如下：
+
+/**
+     * 设置状态栏颜色
+     *
+     * @param activity       需要设置的activity
+     * @param color          状态栏颜色值
+     * @param statusBarAlpha 状态栏透明度
+     */
+
+    public static void setColor(Activity activity, @ColorInt int color, @IntRange(from = 0, to = 255) int statusBarAlpha) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            //
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            //取消透明状态栏，contentView不再与状态栏重叠
+            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            activity.getWindow().setStatusBarColor(calculateStatusColor(color, statusBarAlpha));
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            //透明状态栏，contentView与状态栏重叠，需使用fitSystemWindow属性
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            ViewGroup decorView = (ViewGroup) activity.getWindow().getDecorView();
+            View fakeStatusBarView = decorView.findViewById(FAKE_STATUS_BAR_VIEW_ID);
+            if (fakeStatusBarView != null) {
+                if (fakeStatusBarView.getVisibility() == View.GONE) {
+                    fakeStatusBarView.setVisibility(View.VISIBLE);
+                }
+                fakeStatusBarView.setBackgroundColor(calculateStatusColor(color, statusBarAlpha));
+            } else {
+                decorView.addView(createStatusBarView(activity, color, statusBarAlpha));
+            }
+            setRootView(activity);
+        }
+    }
+
+/**
+     * 生成一个和状态栏大小相同的半透明矩形条
+     *
+     * @param activity 需要设置的activity
+     * @param color    状态栏颜色值
+     * @param alpha    透明值
+     * @return 状态栏矩形条
+     */
+    private static View createStatusBarView(Activity activity, @ColorInt int color, int alpha) {
+        // 绘制一个和状态栏一样高的矩形
+        View statusBarView = new View(activity);
+        LinearLayout.LayoutParams params =
+            new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, getStatusBarHeight(activity));
+        statusBarView.setLayoutParams(params);
+        statusBarView.setBackgroundColor(calculateStatusColor(color, alpha));
+        statusBarView.setId(FAKE_STATUS_BAR_VIEW_ID);
+        return statusBarView;
+    }
+	
+布局延展至状态栏
+1、android 5.0及以上版本
+使用setSystemUiVisibility方法，设置View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN和View.SYSTEM_UI_FLAG_LAYOUT_STABLE。
+
+//代码配置
+activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+activity.getWindow().setStatusBarColor(Color.TRANSPARENT);
+activity.getWindow().getDecorView().setSystemUiVisibility(
+        View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+
+);
+
+//xml配置：values-v21/styles.xml中主题增加以下内容
+<style name="fullScreenTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <item name="android:windowTranslucentStatus">false</item>
+    <item name="android:windowTranslucentNavigation">true</item>
+    <item name="android:statusBarColor">@android:color/transparent</item>
+</style>
+避免使用WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS属性，以提高体验，解决6.0系统的兼容性问题
