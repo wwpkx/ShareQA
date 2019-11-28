@@ -1,0 +1,255 @@
+Dagger2+dagger.android集成步骤
+
+
+
+MinicupSimon
+2018.08.16 11:01:43
+字数 201
+阅读 260
+入门教程(推荐):
+https://www.jianshu.com/p/26d9f99ea3bb
+
+dagger2在Android中的应用
+添加依赖
+    implementation 'com.google.dagger:dagger:2.17'
+    annotationProcessor 'com.google.dagger:dagger-compiler:2.17'
+AppComponent
+如果有SubComponent, 为SubComponent提供相应Builder
+@Singleton
+@Component(modules = {AppModule.class})
+public interface AppComponent {
+    void inject(App app);
+    MainActivityComponent.Builder getMainActivityComponent();
+}
+MainActivityComponent
+@ActivityScope
+@Subcomponent(modules = SubModule.class)
+public interface MainActivityComponent{
+    void inject(MainActivity main);
+
+    @Subcomponent.Builder
+    interface Builder{
+        MainActivityComponent build();
+    }
+}
+-----------------------------------------------------------------------------------------------
+@Module
+public class SubModule {
+    @ActivityScope
+    @Provides
+    public ActivityEntity provideActivityEntity(){
+        return new ActivityEntity();
+    }
+}
+-----------------------------------------------------------------------------------------------
+public class ActivityEntity {
+    String name = "injectEntity";
+    public String getName() {
+        return name;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+AppModule 提供注入的依赖的对象, 经测试, Module中不设置subComponent也没事儿, 只要AppComponent中返回相应的Builder就可以
+@Module
+public class AppModule {
+    @Singleton
+    @Provides
+    public OkHttp provideOkhttp(){
+        return new OkHttp();
+    }
+    @Singleton
+    @Provides
+    public RetrofitClient provideRetrofit(OkHttp okHttp){
+        return new RetrofitClient(okHttp);
+    }
+}
+
+-----------------------------------------------------------------------------------------------
+public class OkHttp {
+    String name = "okhttp";
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+-----------------------------------------------------------------------------------------------
+
+public class RetrofitClient {
+    public String name = "retrofit";
+    public OkHttp okHttp;
+    public RetrofitClient(OkHttp okHttp) {
+        this.okHttp = okHttp;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+}
+App
+public class App extends Application {
+    
+    private static AppComponent appComponent;
+    
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        appComponent = DaggerAppComponent.builder().appModule(new AppModule()).build();
+        appComponent.inject(this);
+    }
+    
+    public static AppComponent getAppComponent() {
+        return appComponent;
+    }
+}
+MainActivity
+public class MainActivity extends BaseActivity {
+    
+    private static final String TAG = "MainActivity";
+    
+    @Inject
+    RetrofitClient client;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+    
+        App.getAppComponent().getMainActivityComponent().build().inject(this);
+        
+        Log.e(TAG, client.getName() );
+        Log.e(TAG, client.okHttp.getName() );
+        Log.e(TAG, String.valueOf(client.hashCode()));
+    }
+}
+dagger.android在Android中的应用
+添加依赖
+   implementation 'com.google.dagger:dagger-android:2.17'
+   implementation 'com.google.dagger:dagger-android-support:2.17'
+   annotationProcessor 'com.google.dagger:dagger-android-processor:2.17'
+AppComponent
+modules中添加 AndroidInjectionModule.class
+@Singleton
+@Component(modules = {AppModule.class, AndroidInjectionModule.class, AppBindModule.class})
+public interface AppComponent {
+    void inject(App app);
+}
+MainActivityComponent
+类继承AndroidInjector<MainActivity>
+Builder extends AndroidInjector.Builder<MainActivity>
+@ActivityScope
+@Subcomponent(modules = SubModule.class)
+public interface MainActivityComponent extends AndroidInjector<MainActivity>{
+    @Subcomponent.Builder
+    abstract class Builder extends AndroidInjector.Builder<MainActivity> {}
+}
+SecondActivityComponent
+@ActivityScope
+@Subcomponent
+public interface SecondActivityComponent extends AndroidInjector<SecondActivity>{
+    @Subcomponent.Builder
+    abstract class Builder extends AndroidInjector.Builder<SecondActivity> {}
+}
+AppModule 提供注入的对象
+@Module
+public class AppModule {
+    @Singleton
+    @Provides
+    public OkHttp provideOkhttp(){
+        return new OkHttp();
+    }
+    @Singleton
+    @Provides
+    public RetrofitClient provideRetrofit(OkHttp okHttp){
+        return new RetrofitClient(okHttp);
+    }
+}
+AppBindModule 负责绑定SubComponent, 如果新增了Activity只需要修改此处即可.
+@Module
+public abstract class AppBindModule {
+    @ContributesAndroidInjector
+    abstract MainActivity contributeMainActivity();
+
+    @ContributesAndroidInjector
+    abstract SecondActivity contributeSecondActivity();
+}
+App
+implements HasActivityInjector
+注入DispatchingAndroidInjector<Activity> 并返回
+onCreate中实现注入逻辑
+public class App extends Application implements HasActivityInjector {
+    
+    @Inject
+    DispatchingAndroidInjector<Activity> androidInjector;
+    
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        DaggerAppComponent.builder().appModule(new AppModule()).build().inject(this);
+    }
+    
+    @Override
+    public AndroidInjector<Activity> activityInjector() {
+        return androidInjector;
+    }
+}
+BaseActivity
+在super前调用 AndroidInjection.inject(this);
+public class BaseActivity extends AppCompatActivity {
+    
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        AndroidInjection.inject(this);
+        super.onCreate(savedInstanceState);
+    }
+}
+继承自BaseActivity的相应Activity
+public class SecondActivity extends BaseActivity {
+    private static final String TAG = "SecondActivity";
+    @Inject
+    RetrofitClient client;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_second);
+        Log.e(TAG, client.getName() );
+        Log.e(TAG, client.okHttp.getName() );
+        Log.e(TAG, String.valueOf(client.hashCode()));
+    }
+}
+注意
+如果AppBindModule中是这种传统的方式的话, AppComponent中需要分别获得相应的Builder
+@Module
+public abstract class AppBindModule {
+    
+    @Binds
+    @IntoMap
+    @ActivityKey(MainActivity.class)
+    abstract AndroidInjector.Factory<? extends Activity> bindAndroidInjector( MainActivityComponent.Builder builder);
+
+
+    @Binds
+    @IntoMap
+    @ActivityKey(SecondActivity.class)
+    abstract AndroidInjector.Factory<? extends Activity> bindAndroidInjector2(SecondComponent.Builder builder);
+
+}
+----------------------------------------------------------------------------------------------------------
+@Singleton
+@Component(modules = {AppModule.class, AndroidInjectionModule.class, AppBindModule.class})
+public interface AppComponent {
+    void inject(App app);  
+    
+    MainActivityComponent.Builder getMainActivityComponent();
+    SecondComponent.Builder getSecondComponent();
+}
